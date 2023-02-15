@@ -1,4 +1,7 @@
-traces/
+traces/*
+!traces
+models/*
+!models
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

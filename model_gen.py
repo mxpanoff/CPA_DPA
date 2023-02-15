@@ -115,6 +115,8 @@ def main(args):
 
     hw_model = np.asarray(hw_model)
     hd_model = np.asarray(hw_model)
+    hw_model.shape = (-1, 8)
+    hd_model.shape = (-1, 8)
     np.save(model_dir + os.path.sep + 'hamming_weight_model.npy', hw_model)
     np.save(model_dir + os.path.sep + 'hamming_distance_model.npy', hd_model)
 
