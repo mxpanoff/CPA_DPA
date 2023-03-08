@@ -105,13 +105,7 @@ def main(args):
         trace_file.readline()
         trace_file.readline()
         trace_file = csv.reader(trace_file)
-        for line in trace_file:
-            print(line)
-            samp_buffer, samp_window, trigger, sensor, const, dummy, sensor_valid, data_out = line
-            if trigger == '1':
-                # update plaintext
-                plaintext = data_out
-                break
+
 
     hw_model = np.asarray(hw_model)
     hd_model = np.asarray(hw_model)
