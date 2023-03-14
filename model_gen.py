@@ -3,6 +3,8 @@ import argparse
 import os
 import csv
 from tqdm import tqdm
+from warnings import warn
+from logging import log
 
 # make SBOX(INV) global so can be accessed via import
 Sbox = (
@@ -50,7 +52,7 @@ def hexstring2bin(hex_string):
     dec_val = int(hex_string, base=16)
     return dec_val
 
-def main(args):
+def calc(args):
     '''
     generate hamming weight and hamming distance models
     :param args: struct with path to trace files and to model_directory
@@ -116,13 +118,23 @@ def main(args):
 
     print("Models saved to {}".format(model_dir))
 
+def main(args):
+    model_dir = args.model_dir
+    text_path = args.text_path
+    assert os.path.isdir(model_dir), '{} is not a valid directory'.format(model_dir)
+    assert os.path.isfile(text_path), '{} is not a valid path'.format(text_path)
+    assert text_path[-4:] == '.txt', '{} is not a text file'.format(text_path)
+
+    if len(os.listdir(model_dir)) != 0:
+        log('{} is not empty, overwriting'.format(model_dir)
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('model_dir', type=str, help='Path to save generated models')
-    parser.add_argument('trace_dir', type=str, help='Path to trace files')
-    parser.add_argument('--plaintext', type=str, help='Initial plaintext', default='0'*32)
+    parser.add_argument('text_path', type=str, help='Path to text file')
+    parser.add_argument('--weight_method', choices=['hw', 'hd'], default='hw', help='Method to determine weights')
+    parser.add_argument('--weight_min', choices=[0, -1], default=0, type=int, help='Weight to use on adverse match')
+
 
     args = parser.parse_args()
-    assert os.path.isdir(args.model_dir), '{} is not a valid directory'.format(args.model_dir)
-    assert os.path.isdir(args.trace_dir), '{} is not a valid directory'.format(args.trace_dir)
     main(args)
