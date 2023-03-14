@@ -52,15 +52,16 @@ def hexstring2bin(hex_string):
     dec_val = int(hex_string, base=16)
     return dec_val
 
-def calc(args):
+def calc_ciphertext(model_dir, text_path, mode_min):
+    # TODO
+    pass
+
+def calc_plaintext(model_dir, text_path, mode_min):
     '''
     generate hamming weight and hamming distance models
     :param args: struct with path to trace files and to model_directory
     :return:
     '''
-    model_dir = args.model_dir
-    trace_dir = args.trace_dir
-    plaintext = args.plaintext
 
     num_potential_keys = 256
 
@@ -68,17 +69,20 @@ def calc(args):
     hd_model = []
     last_sbox = '0'*8
 
-    for trace_file_path in tqdm(os.listdir(trace_dir)):
+    text_file = open(text_path, 'r')
+    for text in tqdm(text_file.readlines()):
         # first make model based on current plaintext
         for key_guess in range(num_potential_keys):
             for byte_num in range(16):
                 # plaintext in 32 chars
-                plaintext_byte = plaintext[byte_num*2:2*(byte_num+1)]
+                plaintext_byte = text[byte_num*2:2*(byte_num+1)]
                 dec_byte = hexstring2bin(plaintext_byte)
                 pre_sbox = dec_byte ^ key_guess
                 sbox_out = Sbox[pre_sbox]
                 sbox_out_string = '{0:8b}'.format(sbox_out)
-                hamming_weight = sbox_out_string.count('1')
+                match_hamming_weight = sbox_out_string.count('1')
+                adverse_hamming_weight = sbox_out_string.count('0')
+                hamming_weight = match_hamming_weight + mode_min*adverse_hamming_weight
 
                 print(sbox_out_string, hex(sbox_out), key_guess, pre_sbox)
                 hw_model.append(hamming_weight)
@@ -91,32 +95,22 @@ def calc(args):
                         # if changed from 0->1 add one
                         hamming_distance += 1
                     elif last_sbox[bit] == '1' and sbox_out_string[bit] != '1':
-                        # if changed from 1->0 substract one
-                        hamming_distance -= 1
+                        # if changed from 1->0 subtract one
+                        hamming_distance += mode_min
 
                     # else nothing
                 hd_model.append(hamming_distance)
                 last_sbox = sbox_out_string
 
-
-        if trace_file_path[-4:] not in ['.csv', '.CSV']:
-            print('{} is not a valid csv file, skipping ...'.format(trace_dir + os.path.sep + trace_file_path))
-            continue
-        trace_file = open(trace_dir + os.path.sep + trace_file_path, 'r')
-        # skip header
-        trace_file.readline()
-        trace_file.readline()
-        trace_file = csv.reader(trace_file)
-
-
     hw_model = np.asarray(hw_model)
     hd_model = np.asarray(hw_model)
     hw_model.shape = (-1, 8)
     hd_model.shape = (-1, 8)
-    np.save(model_dir + os.path.sep + 'hamming_weight_model.npy', hw_model)
-    np.save(model_dir + os.path.sep + 'hamming_distance_model.npy', hd_model)
+    np.save(model_dir + os.path.sep + 'pt_hamming_weight_model_min{}.npy'.format(str(mode_min)), hw_model)
+    np.save(model_dir + os.path.sep + 'pt_hamming_distance_model{}.npy'.format(str(mode_min)), hd_model)
 
     print("Models saved to {}".format(model_dir))
+
 
 def main(args):
     model_dir = args.model_dir
@@ -126,15 +120,21 @@ def main(args):
     assert text_path[-4:] == '.txt', '{} is not a text file'.format(text_path)
 
     if len(os.listdir(model_dir)) != 0:
-        log('{} is not empty, overwriting'.format(model_dir)
+        log('{} is not empty, overwriting'.format(model_dir))
+
+    if args.mode == 'pt':
+        calc_plaintext(model_dir, text_path, args.weight_method, args.weight_min)
+    elif args.mode == 'ct':
+        calc_ciphertext(model_dir, text_path, args.weight_method, args.weight_min)
+    else:
+        assert False, 'HOW DID YOU GET HERE?!?!?!?'
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('model_dir', type=str, help='Path to save generated models')
     parser.add_argument('text_path', type=str, help='Path to text file')
-    parser.add_argument('--weight_method', choices=['hw', 'hd'], default='hw', help='Method to determine weights')
+    parser.add_argument('mode', choices=['pt', 'ct'], type=str, help='Plaintext (pt) or Ciphertext (ct)')
     parser.add_argument('--weight_min', choices=[0, -1], default=0, type=int, help='Weight to use on adverse match')
-
 
     args = parser.parse_args()
     main(args)
