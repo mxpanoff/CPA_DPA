@@ -123,11 +123,13 @@ def main(args):
         log('{} is not empty, overwriting'.format(model_dir))
 
     if args.mode == 'pt':
-        calc_plaintext(model_dir, text_path, args.weight_method, args.weight_min)
+        calc_plaintext(model_dir, text_path, args.weight_min)
     elif args.mode == 'ct':
-        calc_ciphertext(model_dir, text_path, args.weight_method, args.weight_min)
+        calc_ciphertext(model_dir, text_path, args.weight_min)
     else:
-        assert False, 'HOW DID YOU GET HERE?!?!?!?'
+        print('HOW DID YOU GET HERE?!?!?!?')
+        print('please leave')
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
